@@ -45,6 +45,8 @@ Run locally:
 python -m uvicorn freight_search.main:app --app-dir src --host 127.0.0.1 --port 8000
 ```
 
+![Freight search interface showing fictional demo listings](freight-search.png)
+
 Open `http://127.0.0.1:8000/` for the local search interface after loading the
 database settings and applying the schema as above. The page uses plain HTML,
 CSS, and JavaScript with no external assets or build step. Its labeled controls
