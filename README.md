@@ -100,3 +100,27 @@ Official references: [image tags](https://github.com/docker-library/official-ima
 [PostgreSQL search](https://www.postgresql.org/docs/18/textsearch-tables.html),
 [search queries and ranking](https://www.postgresql.org/docs/18/textsearch-controls.html),
 [Psycopg parameters](https://www.psycopg.org/psycopg3/docs/basic/params.html).
+
+## GitHub Actions CI
+
+`.github/workflows/ci.yml` runs on pushes to `main`, pull requests, and manual
+`workflow_dispatch` requests. It uses Ubuntu 24.04 and Python 3.12 with a
+10-minute job timeout. Official checkout/setup-python actions are pinned to
+verified full commit SHAs with release-version comments; token permissions are
+limited to `contents: read` and checkout does not persist credentials.
+
+CI starts an ephemeral `postgres:18.6-bookworm` service with a `pg_isready`
+healthcheck and loopback port mapping. The clearly labeled CI-only credentials
+are scoped to that disposable service. The workflow neither reads nor uploads
+local `.env`, requires no production secrets, and performs no deployment.
+
+It installs `requirements.lock` using `python -m pip install --require-hashes
+-r requirements.lock`, runs `python -m pip --no-cache-dir check`, applies
+`PYTHONPATH=src python -m freight_search.migrate` twice, and runs
+`RUN_DB_TESTS=1 python -m pytest -q -W error`. Integration tests retain their
+dedicated temporary-schema isolation.
+
+Once the workflow is on GitHub, view **Actions → PostgreSQL tests** for run logs
+or select **Run workflow** when the workflow is present on the default branch.
+Local validation does not establish a passing GitHub run; runner setup, service
+startup, and clean locked dependency installation require actual GitHub execution.
