@@ -64,7 +64,7 @@ def test_search_relevance_filters_and_pagination(db_client):
     for key in ("origin", "destination", "equipment_type", "status"):
         items = db_client.get("/search", params={key: other[key]}).json()["items"]
         assert [r["id"] for r in items] == [other["id"]]
-    assert db_client.get("/search", params={"origin": other["origin"].lower()}).json() == {"items": []}
+    assert db_client.get("/search", params={"origin": other["origin"].lower()}).json() == {"items": [other]}
     combined = {k: other[k] for k in ("origin", "destination", "equipment_type", "status")}
     assert db_client.get("/search", params=combined).json()["items"] == [other]
     all_items = db_client.get("/search").json()["items"]
@@ -80,6 +80,51 @@ def test_search_relevance_filters_and_pagination(db_client):
 ])
 def test_search_bounds(db_client, params):
     assert db_client.get("/search", params=params).status_code == 422
+
+
+def test_case_insensitive_exact_route_search(db_client):
+    low = create(db_client, origin="Chicago", destination="Dallas", equipment_type="dry_van",
+                 cargo_description="Fictional copper")
+    high = create(db_client, origin="Chicago", destination="Dallas", equipment_type="dry_van",
+                  cargo_description="Fictional copper copper copper copper")
+    for params in ({"origin": "cHiCaGo"}, {"destination": "dAlLaS"}):
+        response = db_client.get("/search", params=params)
+        assert response.status_code == 200
+        assert {r["id"] for r in response.json()["items"]} == {low["id"], high["id"]}
+        assert all(r["origin"] == "Chicago" and r["destination"] == "Dallas"
+                   for r in response.json()["items"])
+
+    # Fictional distractors exercise each route/filter independently.
+    for changes in ({"origin": "Detroit"}, {"destination": "Houston"},
+                    {"origin": "Chicago Heights"}, {"destination": "Dallas Heights"},
+                    {"equipment_type": "flatbed"}, {"status": "booked"}):
+        create(db_client, **({"origin": "Chicago", "destination": "Dallas",
+                             "equipment_type": "dry_van"} | changes))
+    params = {"origin": "cHiCaGo", "destination": "dAlLaS", "equipment_type": "dry_van",
+              "status": "available", "q": "copper"}
+    response = db_client.get("/search", params=params)
+    assert response.status_code == 200
+    assert response.json() == {"items": [high, low]}
+    assert db_client.get("/search", params=params | {"limit": 1, "offset": 1}).json() == {"items": [low]}
+    for partial in ({"origin": "Chic"}, {"destination": "Dall"}):
+        assert db_client.get("/search", params=params | partial).json() == {"items": []}
+
+
+def test_booked_listing_leaves_available_route_search(db_client):
+    payload = fictional_listing(origin="Chicago", destination="Dallas", equipment_type="dry_van")
+    record = create(db_client, **payload)
+    params = {"origin": "CHICAGO", "destination": "dallas", "equipment_type": "dry_van",
+              "status": "available"}
+    assert db_client.get("/search", params=params).json() == {"items": [record]}
+    response = db_client.put("/listings/" + record["id"], json=payload | {"status": "booked"})
+    assert response.status_code == 200
+    updated = response.json()
+    assert updated["status"] == "booked"
+    assert updated["origin"] == "Chicago" and updated["destination"] == "Dallas"
+    assert db_client.get("/search", params=params).json() == {"items": []}
+    retrieved = db_client.get("/listings/" + record["id"])
+    assert retrieved.status_code == 200
+    assert retrieved.json() == updated
 
 
 def test_update_reflected_in_search(db_client):

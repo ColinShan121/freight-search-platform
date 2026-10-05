@@ -55,9 +55,21 @@ python -m uvicorn freight_search.main:app --app-dir src --host 127.0.0.1 --port 
 - `PUT /listings/{id}` requires all editable fields, preserves id/created_at,
   updates updated_at, and returns the record or 404.
 - `GET /search` returns `{"items": [...]}`. Optional `q` is at most 200 characters;
-  blank/missing q browses records. Origin/destination filters are exact and case
-  sensitive. Equipment is dry_van, refrigerated, or flatbed; status is available,
+  blank/missing q browses records. Origin/destination filters are case-insensitive
+  exact matches: `chicago` matches `Chicago`, but not `Chicago Heights`.
+  Stored location spelling is preserved. Equipment is dry_van, refrigerated, or flatbed; status is available,
   booked, or delivered. Limit is 1–100 (default 20); offset is 0–10000 (default 0).
+
+For a fictional available dry_van listing from Chicago to Dallas carrying copper,
+combine the route with cargo text, equipment, status, and pagination:
+
+```text
+GET /search?origin=chicago&destination=DALLAS&equipment_type=dry_van&status=available&q=copper&limit=20&offset=0
+```
+
+The response is `{"items": [...]}` with the stored spelling. A full replacement
+via `PUT /listings/{id}` setting `status` to `booked` removes the listing from
+this available search; `GET /listings/{id}` still retrieves it.
 
 Pydantic validates nonblank input and length limits (120 characters for locations,
 2000 for descriptions). PostgreSQL also enforces critical constraints. Writes

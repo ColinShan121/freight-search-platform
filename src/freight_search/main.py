@@ -38,7 +38,10 @@ def search(
     for column, value in (("origin", origin), ("destination", destination),
                           ("equipment_type", equipment_type), ("status", status)):
         if value is not None:
-            conditions.append(f"{column} = %s")
+            if column in ("origin", "destination"):
+                conditions.append(f"lower({column}) = lower(%s)")
+            else:
+                conditions.append(f"{column} = %s")
             values.append(value)
     where = " WHERE " + " AND ".join(conditions) if conditions else ""
     order = "created_at DESC, id ASC"
