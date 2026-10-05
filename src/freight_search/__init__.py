@@ -1,0 +1,1 @@
+"""Freight search application package."""
