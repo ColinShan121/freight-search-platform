@@ -2,8 +2,8 @@
 
 A local freight-search portfolio project using Python 3.12 and the existing
 project `.venv`. Implemented: database-independent liveness, PostgreSQL listing
-create/get/full replacement, and English full-text search with exact filters.
-NATS, OpenSearch, distributed indexing, and a frontend are planned extensions;
+create/get/full replacement, English full-text search with exact filters, and a
+small local browser search interface. NATS, OpenSearch, and distributed indexing are planned extensions;
 there are no production-scale or measured latency claims.
 
 ## Local setup
@@ -44,6 +44,28 @@ Run locally:
 ```bash
 python -m uvicorn freight_search.main:app --app-dir src --host 127.0.0.1 --port 8000
 ```
+
+Open `http://127.0.0.1:8000/` for the local search interface after loading the
+database settings and applying the schema as above. The page uses plain HTML,
+CSS, and JavaScript with no external assets or build step. Its labeled controls
+send relative requests to `/search`; it displays up to 20 matching listings.
+The page itself needs no database configuration, but searching requires the database.
+
+Manual browser checks (these are separate from the HTML response test):
+
+- Submit with blank filters and with cargo, mixed-case route, equipment, and
+  status filters. Compare returned records with `/search` and verify stored spelling.
+- Check loading feedback, a route with no results, and an error when the API or
+  database is unavailable. Submit different searches rapidly; the final results
+  must belong to the most recent submission.
+- Use Tab and Enter to operate every control. Check focus visibility, readable
+  text, and single-column layout at a narrow mobile viewport as well as desktop.
+- If a listing contains HTML-looking text, verify it appears literally rather
+  than rendering markup. Listing values are assigned through `textContent`.
+
+The database-independent TestClient test checks that `/` returns HTML with the
+expected labeled controls, even from a different working directory. It does not
+execute JavaScript or verify visual layout; the browser checks above remain necessary.
 
 ## API and data flow
 

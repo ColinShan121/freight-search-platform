@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Freight Search</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172b35; background: #f3f6f5; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { max-width: 1080px; margin: auto; padding: 40px 24px; }
+    .eyebrow { color: #36594d; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .8rem; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); margin: 12px 0; }
+    .intro, .hint { color: #455b65; line-height: 1.6; }
+    form { background: white; border: 1px solid #c6d2ce; border-radius: 12px; padding: 24px; margin: 28px 0; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    .cargo { grid-column: 1 / -1; }
+    label { display: block; font-weight: 650; margin-bottom: 8px; }
+    input, select, button { font: inherit; min-height: 46px; border-radius: 6px; }
+    input, select { width: 100%; background: white; color: #172b35; border: 1px solid #748b85; padding: 10px; }
+    button { background: #175841; color: white; border: 0; padding: 12px 24px; cursor: pointer; margin-top: 20px; font-weight: 650; }
+    button:hover { background: #103f2e; }
+    :focus-visible { outline: 3px solid #125fb0; outline-offset: 3px; }
+    .hint { font-size: .9rem; margin-bottom: 0; }
+    #message { min-height: 24px; line-height: 1.6; }
+    #message.error { color: #9b2424; }
+    #results { display: grid; gap: 16px; }
+    article { background: white; border: 1px solid #c6d2ce; border-radius: 10px; padding: 20px; overflow-wrap: anywhere; }
+    article h3 { margin: 0 0 12px; font-size: 1.2rem; }
+    .description { white-space: pre-wrap; line-height: 1.6; }
+    dl { display: flex; flex-wrap: wrap; gap: 16px 40px; margin-bottom: 0; }
+    dt { font-size: .85rem; color: #455b65; }
+    dd { margin: 4px 0 0; font-weight: 650; }
+    @media (max-width: 600px) {
+      main { padding: 24px 16px; }
+      form { padding: 18px; }
+      .fields { grid-template-columns: 1fr; }
+      button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <p class="eyebrow">Local freight listings</p>
+      <h1>Find your next load</h1>
+      <p class="intro">Search cargo and routes, or leave filters blank to browse listings.</p>
+    </header>
+    <form id="search-form" action="/search" method="get">
+      <div class="fields">
+        <div class="cargo">
+          <label for="q">Cargo query</label>
+          <input id="q" name="q" type="search" maxlength="200" placeholder="Search cargo descriptions">
+        </div>
+        <div>
+          <label for="origin">Origin</label>
+          <input id="origin" name="origin" maxlength="120" aria-describedby="route-hint">
+        </div>
+        <div>
+          <label for="destination">Destination</label>
+          <input id="destination" name="destination" maxlength="120" aria-describedby="route-hint">
+        </div>
+        <div>
+          <label for="equipment_type">Equipment type</label>
+          <select id="equipment_type" name="equipment_type">
+            <option value="">Any equipment</option>
+            <option value="dry_van">Dry van</option>
+            <option value="refrigerated">Refrigerated</option>
+            <option value="flatbed">Flatbed</option>
+          </select>
+        </div>
+        <div>
+          <label for="status">Status</label>
+          <select id="status" name="status">
+            <option value="">Any status</option>
+            <option value="available">Available</option>
+            <option value="booked">Booked</option>
+            <option value="delivered">Delivered</option>
+          </select>
+        </div>
+      </div>
+      <p id="route-hint" class="hint">Locations match full names regardless of case. Chicago does not match Chicago Heights.</p>
+      <button type="submit">Search listings</button>
+    </form>
+    <noscript>JavaScript is required for inline results. Submitting the form opens the search API response.</noscript>
+    <section aria-labelledby="results-title">
+      <h2 id="results-title">Search results</h2>
+      <p id="message" role="status" aria-live="polite" aria-atomic="true">Choose filters or search all listings.</p>
+      <div id="results" aria-busy="false"></div>
+    </section>
+  </main>
+  <script>
+    const form = document.getElementById("search-form");
+    const results = document.getElementById("results");
+    const message = document.getElementById("message");
+    let activeController;
+    let searchNumber = 0;
+
+    function renderListing(listing) {
+      const card = document.createElement("article");
+      const route = document.createElement("h3");
+      route.textContent = `${listing.origin} → ${listing.destination}`;
+      const description = document.createElement("p");
+      description.className = "description";
+      description.textContent = listing.cargo_description;
+      const details = document.createElement("dl");
+      for (const [label, value] of [["Equipment", listing.equipment_type], ["Status", listing.status]]) {
+        const group = document.createElement("div");
+        const term = document.createElement("dt");
+        term.textContent = label;
+        const definition = document.createElement("dd");
+        definition.textContent = value;
+        group.append(term, definition);
+        details.append(group);
+      }
+      card.append(route, description, details);
+      return card;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const currentSearch = ++searchNumber;
+      if (activeController) activeController.abort();
+      const controller = new AbortController();
+      activeController = controller;
+      const params = new URLSearchParams();
+      for (const [name, value] of new FormData(form)) {
+        if (value.trim()) params.set(name, value.trim());
+      }
+      params.set("limit", "20");
+      results.replaceChildren();
+      results.setAttribute("aria-busy", "true");
+      message.className = "";
+      message.textContent = "Searching listings…";
+      try {
+        const response = await fetch(`/search?${params}`, { signal: controller.signal });
+        if (!response.ok) throw new Error("Search request failed");
+        const data = await response.json();
+        if (currentSearch !== searchNumber) return;
+        if (!Array.isArray(data.items)) throw new Error("Unexpected search response");
+        const cards = data.items.map(renderListing);
+        results.replaceChildren(...cards);
+        message.textContent = data.items.length
+          ? `Showing ${data.items.length} listing(s), up to 20. Refine the filters to narrow results.`
+          : "No listings match these filters. Try a different route or cargo query.";
+      } catch (error) {
+        if (currentSearch !== searchNumber || error.name === "AbortError") return;
+        results.replaceChildren();
+        message.className = "error";
+        message.textContent = "Could not load listings. Check that the local API and database are available, then try again.";
+      } finally {
+        if (currentSearch === searchNumber) results.setAttribute("aria-busy", "false");
+      }
+    });
+  </script>
+</body>
+</html>

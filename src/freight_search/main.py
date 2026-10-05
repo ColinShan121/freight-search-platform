@@ -1,7 +1,9 @@
+from pathlib import Path
 from typing import Annotated
 from uuid import UUID, uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.responses import FileResponse
 from psycopg import Connection
 
 from freight_search.db import get_db
@@ -11,6 +13,11 @@ from freight_search.models import TEXT_PATTERN, Equipment, Listing, ListingInput
 app = FastAPI(title="Freight Search")
 DB = Annotated[Connection, Depends(get_db, scope="function")]
 COLUMNS = "id, origin, destination, cargo_description, equipment_type, status, created_at, updated_at"
+
+
+@app.get("/", response_class=FileResponse)
+def search_page():
+    return FileResponse(Path(__file__).resolve().parent / "static" / "index.html", media_type="text/html")
 
 
 @app.get("/health/live")
