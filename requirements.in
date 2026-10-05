@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic>=2,<3
+psycopg[binary]
+nats-py
+opensearch-py[async]
+pytest
+httpx
