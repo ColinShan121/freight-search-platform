@@ -3,99 +3,192 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Freight Search</title>
+  <title>Freight Search · Local dashboard</title>
   <style>
-    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #172b35; background: #f3f6f5; }
+    :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #1b1b1b; background: white; }
     * { box-sizing: border-box; }
-    body { margin: 0; }
-    main { max-width: 1080px; margin: auto; padding: 40px 24px; }
-    .eyebrow { color: #36594d; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .8rem; }
-    h1 { font-size: clamp(2rem, 5vw, 3rem); margin: 12px 0; }
-    .intro, .hint { color: #455b65; line-height: 1.6; }
-    form { background: white; border: 1px solid #c6d2ce; border-radius: 12px; padding: 24px; margin: 28px 0; }
-    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-    .cargo { grid-column: 1 / -1; }
+    body { margin: 0; line-height: 1.5; }
+    a { color: #005ea2; text-underline-offset: .2em; }
+    a:hover { color: #1a4480; }
+    .skip-link { position: absolute; top: -100px; left: 20px; z-index: 10; background: white; color: #005ea2; padding: 12px 20px; font-weight: 700; }
+    .skip-link:focus { top: 12px; }
+    .site-header { background: white; border-bottom: 1px solid #dfe1e2; }
+    .header-inner { max-width: 1200px; margin: auto; padding: 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+    .brand { color: #162e51; font-size: 1.5rem; font-weight: 750; text-decoration: none; }
+    .site-nav ul { display: flex; gap: 24px; flex-wrap: wrap; list-style: none; padding: 0; margin: 0; }
+    .site-nav a { font-weight: 650; padding: 8px 0; }
+    .intro { background: #162e51; color: white; }
+    .intro-inner { max-width: 1200px; padding: 44px 24px 48px; margin: auto; }
+    .demo-label { display: inline-block; border: 1px solid #a9c9e8; color: #e1f3ff; font-size: .8rem; letter-spacing: .025em; padding: 4px 10px; margin: 0 0 18px; }
+    h1, h2 { font-family: Georgia, "Times New Roman", serif; }
+    h1 { font-size: clamp(2rem, 5vw, 3rem); line-height: 1.15; margin: 0 0 20px; max-width: 760px; }
+    .intro p:last-child { color: #e1e7ef; max-width: 720px; font-size: 1.1rem; margin: 0; line-height: 1.65; }
+    main { max-width: 1200px; margin: auto; padding: 48px 24px; display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr); gap: 48px; align-items: start; }
+    section { scroll-margin-top: 24px; }
+    .panel { background: white; border-top: 3px solid #162e51; padding-top: 24px; }
+    h2 { color: #162e51; margin: 0 0 24px; font-size: 1.65rem; line-height: 1.3; }
+    .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 20px; }
+    .wide { grid-column: 1 / -1; }
     label { display: block; font-weight: 650; margin-bottom: 8px; }
-    input, select, button { font: inherit; min-height: 46px; border-radius: 6px; }
-    input, select { width: 100%; background: white; color: #172b35; border: 1px solid #748b85; padding: 10px; }
-    button { background: #175841; color: white; border: 0; padding: 12px 24px; cursor: pointer; margin-top: 20px; font-weight: 650; }
-    button:hover { background: #103f2e; }
-    :focus-visible { outline: 3px solid #125fb0; outline-offset: 3px; }
-    .hint { font-size: .9rem; margin-bottom: 0; }
-    #message { min-height: 24px; line-height: 1.6; }
-    #message.error { color: #9b2424; }
-    #results { display: grid; gap: 16px; }
-    article { background: white; border: 1px solid #c6d2ce; border-radius: 10px; padding: 20px; overflow-wrap: anywhere; }
-    article h3 { margin: 0 0 12px; font-size: 1.2rem; }
-    .description { white-space: pre-wrap; line-height: 1.6; }
-    dl { display: flex; flex-wrap: wrap; gap: 16px 40px; margin-bottom: 0; }
-    dt { font-size: .85rem; color: #455b65; }
-    dd { margin: 4px 0 0; font-weight: 650; }
-    @media (max-width: 600px) {
-      main { padding: 24px 16px; }
-      form { padding: 18px; }
-      .fields { grid-template-columns: 1fr; }
-      button { width: 100%; }
+    input, select, textarea, button { font: inherit; border-radius: 0; }
+    input, select, textarea { width: 100%; background: white; color: #1b1b1b; border: 1px solid #565c65; padding: 10px 12px; min-height: 46px; }
+    textarea { resize: vertical; min-height: 130px; }
+    button { background: #005ea2; color: white; border: 1px solid #005ea2; padding: 11px 20px; min-height: 46px; cursor: pointer; font-weight: 700; }
+    button:hover:not(:disabled) { background: #1a4480; border-color: #1a4480; }
+    button.secondary { background: white; color: #005ea2; border-color: #005ea2; }
+    button.secondary:hover:not(:disabled) { background: #edf5fb; color: #1a4480; }
+    button:disabled { background: #e6e6e6; color: #565c65; border-color: #c9c9c9; cursor: default; }
+    :focus-visible { outline: 3px solid #2491ff; outline-offset: 4px; }
+    .actions, .pagination { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 24px; }
+    .hint, dt { color: #454545; line-height: 1.65; font-size: .9rem; }
+    .summary { background: #f1f3f6; border-left: 4px solid #005ea2; padding: 16px; margin: 28px 0 0; overflow-wrap: anywhere; line-height: 1.65; }
+    .feedback { line-height: 1.65; min-height: 28px; overflow-wrap: anywhere; }
+    .feedback.error { color: #8b0a03; background: #fef1f0; border-left: 4px solid #b50909; padding: 16px; }
+    .feedback.success { color: #154c21; background: #ecf3ec; border-left: 4px solid #216e1f; padding: 16px; }
+    .result-section { margin-top: 48px; }
+    #results { display: grid; gap: 20px; }
+    article { background: white; border: 1px solid #dfe1e2; border-left: 4px solid #005ea2; padding: 24px; overflow-wrap: anywhere; }
+    article h3 { color: #162e51; margin: 0; font-size: 1.35rem; line-height: 1.4; }
+    .description { white-space: pre-wrap; line-height: 1.7; margin: 16px 0; }
+    dl { display: flex; gap: 24px 40px; flex-wrap: wrap; margin-bottom: 0; }
+    dd { margin: 5px 0 0; font-weight: 650; }
+    .badge { display: inline-block; background: #e1f3ff; border: 1px solid #a9c9e8; padding: 3px 10px; color: #162e51; text-transform: capitalize; }
+    fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+    legend { font-weight: 650; margin-bottom: 20px; }
+    .site-footer { background: #f1f3f6; border-top: 1px solid #dfe1e2; }
+    .footer-inner { max-width: 1200px; padding: 24px; margin: auto; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; font-size: .9rem; }
+    .footer-inner p { margin: 0; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; gap: 48px; } }
+    @media (max-width: 540px) {
+      .header-inner { padding: 20px; gap: 12px; } .site-nav { width: 100%; } .site-nav ul { gap: 20px; }
+      .intro-inner { padding: 32px 20px; } main { padding: 32px 20px; }
+      .fields { grid-template-columns: 1fr; } .actions button { flex: 1; }
+      article { padding: 20px; } .footer-inner { padding: 20px; }
     }
   </style>
 </head>
-<body>
-  <main>
-    <header>
-      <p class="eyebrow">Local freight listings</p>
-      <h1>Find your next load</h1>
-      <p class="intro">Search cargo and routes, or leave filters blank to browse listings.</p>
-    </header>
-    <form id="search-form" action="/search" method="get">
-      <div class="fields">
-        <div class="cargo">
-          <label for="q">Cargo query</label>
-          <input id="q" name="q" type="search" maxlength="200" placeholder="Search cargo descriptions">
-        </div>
-        <div>
-          <label for="origin">Origin</label>
-          <input id="origin" name="origin" maxlength="120" aria-describedby="route-hint">
-        </div>
-        <div>
-          <label for="destination">Destination</label>
-          <input id="destination" name="destination" maxlength="120" aria-describedby="route-hint">
-        </div>
-        <div>
-          <label for="equipment_type">Equipment type</label>
-          <select id="equipment_type" name="equipment_type">
-            <option value="">Any equipment</option>
-            <option value="dry_van">Dry van</option>
-            <option value="refrigerated">Refrigerated</option>
-            <option value="flatbed">Flatbed</option>
-          </select>
-        </div>
-        <div>
-          <label for="status">Status</label>
-          <select id="status" name="status">
-            <option value="">Any status</option>
-            <option value="available">Available</option>
-            <option value="booked">Booked</option>
-            <option value="delivered">Delivered</option>
-          </select>
-        </div>
-      </div>
-      <p id="route-hint" class="hint">Locations match full names regardless of case. Chicago does not match Chicago Heights.</p>
-      <button type="submit">Search listings</button>
-    </form>
-    <noscript>JavaScript is required for inline results. Submitting the form opens the search API response.</noscript>
-    <section aria-labelledby="results-title">
-      <h2 id="results-title">Search results</h2>
-      <p id="message" role="status" aria-live="polite" aria-atomic="true">Choose filters or search all listings.</p>
-      <div id="results" aria-busy="false"></div>
+<body id="top">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#top">Freight Search</a>
+      <nav class="site-nav" aria-label="Main navigation">
+        <ul>
+          <li><a href="#search-section">Search</a></li>
+          <li><a href="#add-listing">Add listing</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+  <section class="intro" aria-labelledby="intro-title">
+    <div class="intro-inner">
+      <p class="demo-label">Local portfolio demonstration</p>
+      <h1 id="intro-title">Find your next freight load</h1>
+      <p>Search local freight listings by cargo, route, equipment, and status.
+        Browse matching loads or add a listing to your local database.</p>
+    </div>
+  </section>
+  <main id="main-content" tabindex="-1">
+    <div>
+      <section id="search-section" class="panel" aria-labelledby="search-title">
+        <h2 id="search-title">Search listings</h2>
+        <form id="search-form" action="/search" method="get">
+          <div class="fields">
+            <div class="wide"><label for="q">Cargo query</label><input id="q" name="q" type="search" maxlength="200" placeholder="Search cargo descriptions"></div>
+            <div><label for="origin">Origin</label><input id="origin" name="origin" maxlength="120" aria-describedby="route-hint"></div>
+            <div><label for="destination">Destination</label><input id="destination" name="destination" maxlength="120" aria-describedby="route-hint"></div>
+            <div><label for="equipment_type">Equipment type</label><select id="equipment_type" name="equipment_type"><option value="">Any equipment</option><option value="dry_van">Dry van</option><option value="refrigerated">Refrigerated</option><option value="flatbed">Flatbed</option></select></div>
+            <div><label for="status">Status</label><select id="status" name="status"><option value="">Any status</option><option value="available">Available</option><option value="booked">Booked</option><option value="delivered">Delivered</option></select></div>
+          </div>
+          <p id="route-hint" class="hint">Full location names match regardless of case. Chicago does not match Chicago Heights.</p>
+          <div class="actions"><button type="submit">Search listings</button><button id="clear-filters" class="secondary" type="button">Clear filters</button></div>
+        </form>
+        <p id="filter-summary" class="summary" aria-live="polite">Active filters: none</p>
+      </section>
+      <section class="result-section" aria-labelledby="results-title">
+        <h2 id="results-title">Matching freight</h2>
+        <p id="message" class="feedback" role="status" aria-live="polite" aria-atomic="true">Choose filters or search all listings.</p>
+        <div id="results" aria-busy="false"></div>
+        <nav class="pagination" aria-label="Search result pages">
+          <button id="previous-page" class="secondary" type="button" disabled>Previous</button>
+          <span id="page-label">Page 1 · up to 20 listings per page</span>
+          <button id="next-page" class="secondary" type="button" disabled>Next</button>
+        </nav>
+        <p class="hint">No total count is available. A full page allows checking the next page, which may be empty.</p>
+      </section>
+    </div>
+    <section id="add-listing" class="panel" aria-labelledby="create-title">
+      <h2 id="create-title">Add a listing</h2>
+      <p class="hint">Adds a record to your local database. All fields are required.</p>
+      <form id="create-form">
+        <fieldset id="create-fields">
+          <legend>Listing details</legend>
+          <div class="fields">
+            <div class="wide"><label for="create-origin">Origin</label><input id="create-origin" name="origin" required maxlength="120" aria-describedby="create-hint"></div>
+            <div class="wide"><label for="create-destination">Destination</label><input id="create-destination" name="destination" required maxlength="120" aria-describedby="create-hint"></div>
+            <div class="wide"><label for="create-cargo">Cargo description</label><textarea id="create-cargo" name="cargo_description" required maxlength="2000" aria-describedby="create-hint"></textarea></div>
+            <div class="wide"><label for="create-equipment">Equipment type</label><select id="create-equipment" name="equipment_type" required><option value="">Choose equipment</option><option value="dry_van">Dry van</option><option value="refrigerated">Refrigerated</option><option value="flatbed">Flatbed</option></select></div>
+            <div class="wide"><label for="create-status">Status</label><select id="create-status" name="status" required><option value="available">Available</option><option value="booked">Booked</option><option value="delivered">Delivered</option></select></div>
+          </div>
+          <p id="create-hint" class="hint">Locations: 1–120 characters. Cargo: 1–2000 characters. Text must not be blank or contain NUL characters.</p>
+          <div class="actions"><button id="create-submit" type="submit">Create listing</button></div>
+        </fieldset>
+      </form>
+      <p id="create-message" class="feedback" role="status" aria-live="polite" aria-atomic="true" tabindex="-1"></p>
     </section>
+    <noscript>JavaScript is required for creation, pagination, and inline results. The search form opens the API response without JavaScript.</noscript>
   </main>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>Freight Search · Local portfolio demonstration</p>
+      <a href="https://github.com/ColinShan121/freight-search-platform">Project repository</a>
+    </div>
+  </footer>
   <script>
     const form = document.getElementById("search-form");
     const results = document.getElementById("results");
     const message = document.getElementById("message");
-    let activeController;
+    const summary = document.getElementById("filter-summary");
+    const previous = document.getElementById("previous-page");
+    const next = document.getElementById("next-page");
+    const pageLabel = document.getElementById("page-label");
+    const createForm = document.getElementById("create-form");
+    const createFields = document.getElementById("create-fields");
+    const createMessage = document.getElementById("create-message");
+    const pageSize = 20;
+    let offset = 0;
     let searchNumber = 0;
+    let activeController;
+    let searching = false;
+    let hasNextPage = false;
+    let creating = false;
+    const labels = { q: "Cargo", origin: "Origin", destination: "Destination", equipment_type: "Equipment", status: "Status", cargo_description: "Cargo description" };
+    const pretty = (value) => String(value).replaceAll("_", " ");
 
+    function filters() {
+      const params = new URLSearchParams();
+      for (const [name, value] of new FormData(form)) {
+        if (value.trim()) params.set(name, value.trim());
+      }
+      return params;
+    }
+    function updateSummary(params) {
+      const values = Array.from(params, ([name, value]) => `${labels[name]}: ${value}`);
+      summary.textContent = `Active filters: ${values.length ? values.join(" · ") : "none"}`;
+    }
+    function updatePagination() {
+      previous.disabled = searching || offset === 0;
+      next.disabled = searching || !hasNextPage || offset + pageSize > 10000;
+      pageLabel.textContent = `Page ${offset / pageSize + 1} · up to ${pageSize} listings per page`;
+    }
+    function feedback(element, text, state = "") {
+      element.textContent = text;
+      element.className = `feedback ${state}`;
+    }
+    function validationMessage(data) {
+      if (!Array.isArray(data.detail)) return "Check the field values and try again.";
+      return data.detail.map((issue) => `${labels[issue.loc?.at(-1)] || "Field"}: ${issue.msg || "invalid value"}`).join("; ");
+    }
     function renderListing(listing) {
       const card = document.createElement("article");
       const route = document.createElement("h3");
@@ -109,47 +202,125 @@
         const term = document.createElement("dt");
         term.textContent = label;
         const definition = document.createElement("dd");
-        definition.textContent = value;
+        definition.textContent = pretty(value);
+        if (label === "Status") definition.className = "badge";
         group.append(term, definition);
         details.append(group);
       }
       card.append(route, description, details);
       return card;
     }
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    function invalidateSearch() {
+      ++searchNumber;
+      if (activeController) activeController.abort();
+      offset = 0;
+      searching = false;
+      hasNextPage = false;
+      results.replaceChildren();
+      results.setAttribute("aria-busy", "false");
+      updateSummary(filters());
+      updatePagination();
+      feedback(message, "Filters changed. Select Search listings to apply them.");
+    }
+    async function search() {
       const currentSearch = ++searchNumber;
       if (activeController) activeController.abort();
       const controller = new AbortController();
       activeController = controller;
-      const params = new URLSearchParams();
-      for (const [name, value] of new FormData(form)) {
-        if (value.trim()) params.set(name, value.trim());
-      }
-      params.set("limit", "20");
+      const params = filters();
+      updateSummary(params);
+      params.set("limit", String(pageSize));
+      params.set("offset", String(offset));
+      searching = true;
+      hasNextPage = false;
+      updatePagination();
       results.replaceChildren();
       results.setAttribute("aria-busy", "true");
-      message.className = "";
-      message.textContent = "Searching listings…";
+      feedback(message, "Searching listings…");
       try {
         const response = await fetch(`/search?${params}`, { signal: controller.signal });
-        if (!response.ok) throw new Error("Search request failed");
+        if (currentSearch !== searchNumber) return;
+        if (response.status === 422) {
+          const data = await response.json();
+          if (currentSearch === searchNumber) feedback(message, `Search validation error. ${validationMessage(data)}`, "error");
+          return;
+        }
+        if (!response.ok) throw new Error("Server error");
         const data = await response.json();
         if (currentSearch !== searchNumber) return;
-        if (!Array.isArray(data.items)) throw new Error("Unexpected search response");
-        const cards = data.items.map(renderListing);
-        results.replaceChildren(...cards);
-        message.textContent = data.items.length
-          ? `Showing ${data.items.length} listing(s), up to 20. Refine the filters to narrow results.`
-          : "No listings match these filters. Try a different route or cargo query.";
+        if (!Array.isArray(data.items)) throw new Error("Unexpected response");
+        results.replaceChildren(...data.items.map(renderListing));
+        hasNextPage = data.items.length === pageSize;
+        feedback(message, data.items.length
+          ? `Showing ${data.items.length} listing(s) on this page.`
+          : "No listings on this page. Try Previous or change the filters.");
       } catch (error) {
         if (currentSearch !== searchNumber || error.name === "AbortError") return;
         results.replaceChildren();
-        message.className = "error";
-        message.textContent = "Could not load listings. Check that the local API and database are available, then try again.";
+        feedback(message, "Search unavailable. Check the local API and database, then try again.", "error");
       } finally {
-        if (currentSearch === searchNumber) results.setAttribute("aria-busy", "false");
+        if (currentSearch === searchNumber) {
+          searching = false;
+          results.setAttribute("aria-busy", "false");
+          updatePagination();
+        }
+      }
+    }
+    form.addEventListener("input", invalidateSearch);
+    form.addEventListener("change", invalidateSearch);
+    form.addEventListener("submit", (event) => { event.preventDefault(); offset = 0; search(); });
+    document.getElementById("clear-filters").addEventListener("click", () => {
+      form.reset(); invalidateSearch(); search();
+    });
+    previous.addEventListener("click", () => { if (!previous.disabled) { offset -= pageSize; search(); } });
+    next.addEventListener("click", () => { if (!next.disabled) { offset += pageSize; search(); } });
+
+    createForm.addEventListener("input", (event) => {
+      if (event.target.setCustomValidity) event.target.setCustomValidity("");
+    });
+    createForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (creating) return;
+      const payload = Object.fromEntries(new FormData(createForm));
+      let invalid = false;
+      for (const [name, max] of [["origin", 120], ["destination", 120], ["cargo_description", 2000]]) {
+        payload[name] = payload[name].trim();
+        const control = createForm.elements.namedItem(name);
+        const valid = payload[name].length > 0 && Array.from(payload[name]).length <= max && !payload[name].includes("\u0000");
+        control.setCustomValidity(valid ? "" : `Enter nonblank text of at most ${max} characters without NUL characters.`);
+        invalid ||= !valid;
+      }
+      if (invalid || !createForm.reportValidity()) {
+        feedback(createMessage, "Validation error: check the required fields and text limits.", "error");
+        createForm.reportValidity();
+        return;
+      }
+      creating = true;
+      createFields.disabled = true;
+      createForm.setAttribute("aria-busy", "true");
+      feedback(createMessage, "Creating listing…");
+      try {
+        const response = await fetch("/listings", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+        });
+        if (response.status === 422) {
+          feedback(createMessage, `Validation error. ${validationMessage(await response.json())}`, "error");
+          return;
+        }
+        if (response.status !== 201) throw new Error("Server error");
+        const listing = await response.json();
+        if (typeof listing.id !== "string") throw new Error("Unexpected response");
+        feedback(createMessage, `Listing created successfully. Created ID: ${listing.id}`, "success");
+        createForm.reset();
+        createMessage.focus();
+        offset = 0;
+        search();
+      } catch (error) {
+        feedback(createMessage, "Creation could not be confirmed. Your entries are preserved. Check search before retrying: the server may have saved the listing if its response was lost.", "error");
+      } finally {
+        creating = false;
+        createFields.disabled = false;
+        createForm.setAttribute("aria-busy", "false");
       }
     });
   </script>

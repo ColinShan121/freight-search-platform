@@ -3,7 +3,7 @@
 A local freight-search portfolio project using Python 3.12 and the existing
 project `.venv`. Implemented: database-independent liveness, PostgreSQL listing
 create/get/full replacement, English full-text search with exact filters, and a
-small local browser search interface. NATS, OpenSearch, and distributed indexing are planned extensions;
+small local browser dashboard with search and listing creation. NATS, OpenSearch, and distributed indexing are planned extensions;
 there are no production-scale or measured latency claims.
 
 ## Local setup
@@ -48,24 +48,53 @@ python -m uvicorn freight_search.main:app --app-dir src --host 127.0.0.1 --port 
 Open `http://127.0.0.1:8000/` for the local search interface after loading the
 database settings and applying the schema as above. The page uses plain HTML,
 CSS, and JavaScript with no external assets or build step. Its labeled controls
-send relative requests to `/search`; it displays up to 20 matching listings.
-The page itself needs no database configuration, but searching requires the database.
+send relative requests to `/search` and `POST /listings`. The interface uses a white header, navy introduction, blue buttons, rectangular
+controls, and generous spacing inspired by the [USWDS visual language](https://designsystem.digital.gov/).
+It uses original freight content and no government branding or affiliation claims.
+A visible label identifies it as a local portfolio demonstration. Search/Add listing
+navigation, a skip-to-content link, and a repository footer organize the page. The page itself needs no database
+configuration, but search and creation require the database.
+
+The active-filter summary follows the search controls. Clear filters resets them
+and browses from page 1. Previous/Next use `limit=20` and bounded offsets; changing
+filters resets the page and cancels older searches. No total count is displayed.
+Next is enabled after a full page, so the next page can be empty; Previous lets
+you return. Concurrent writes can shift offset-based pages.
+
+The create form requires origin, destination, cargo_description, equipment_type,
+and status with the API's text limits and enums. It blocks duplicate submissions
+while pending, preserves entries on failure, and shows the created UUID on success.
+It then refreshes search from page 1 using the current filters. A created listing
+may not match those filters. A lost response can leave creation unconfirmed even
+if the server saved it; check search before retrying.
 
 Manual browser checks (these are separate from the HTML response test):
 
 - Submit with blank filters and with cargo, mixed-case route, equipment, and
   status filters. Compare returned records with `/search` and verify stored spelling.
+- Create a clearly labeled fictional local listing. Check required fields,
+  whitespace-only text, text limits, equipment/status choices, the success message,
+  and created ID. Retrieve that ID through `GET /listings/{id}`. During a slow
+  request, verify repeated clicks/Enter cannot submit again. On validation/server
+  failure, verify entries remain available for correction or retry.
+- With more than 20 local records, move Next and Previous, compare `limit`/`offset`
+  requests, and confirm no total is implied. On a full final page, Next may be empty.
+  Change a filter or use Clear filters and verify the page resets to 1.
 - Check loading feedback, a route with no results, and an error when the API or
   database is unavailable. Submit different searches rapidly; the final results
   must belong to the most recent submission.
-- Use Tab and Enter to operate every control. Check focus visibility, readable
+- Use Tab to reveal the skip-to-content link and Enter to move to the main content.
+  Check Search/Add listing navigation and the repository footer link.
+  Use Tab and Enter to operate every control. Check focus visibility, readable
   text, and single-column layout at a narrow mobile viewport as well as desktop.
 - If a listing contains HTML-looking text, verify it appears literally rather
   than rendering markup. Listing values are assigned through `textContent`.
 
 The database-independent TestClient test checks that `/` returns HTML with the
-expected labeled controls, even from a different working directory. It does not
+expected labeled search/create controls, constraints, and pagination controls,
+even from a different working directory. It does not
 execute JavaScript or verify visual layout; the browser checks above remain necessary.
+Accessibility compliance has not been verified for this implementation.
 
 ## API and data flow
 
